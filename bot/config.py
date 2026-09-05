@@ -88,15 +88,21 @@ INVENTORY_REGION = _region(140 / 1920, 270 / 1080, 730 / 1920, 520 / 1080)
 TRUNK_REGION = _region(1070 / 1920, 270 / 1080, 730 / 1920, 520 / 1080)
 
 # ไอเทม
-ORE_TEMPLATE = os.path.join(TEMPLATE_DIR, "ore_template.png")    # แร่ดิบ (Steel)
-BAR_TEMPLATE = os.path.join(TEMPLATE_DIR, "bar_template.png")    # แท่งที่โพเสร็จ (Steel Bar)
+ORE_TEMPLATE = os.path.join(TEMPLATE_DIR, "ore_template.png")    # แร่ดิบที่เอาไปโพ
+BAR_TEMPLATE = os.path.join(TEMPLATE_DIR, "bar_template.png")    # ทองแดง = ของที่จะเก็บ
+# ทองคำ = ของที่โพได้มาด้วยแต่ไม่เก็บ ถ่ายไว้เพื่อกันหยิบผิด (มีก็ใช้ ไม่มีก็ข้าม)
+BAR_REJECT_TEMPLATE = os.path.join(TEMPLATE_DIR, "bar_reject.png")
 TEMPLATE_MATCH_THRESHOLD = 0.70
 
-# แร่คนละชนิดทรงเหมือนกันแต่คนละสี (เหล็กสีเทา sat~28 / ทองแดงสีส้ม sat~181)
-# template matching ดูทรงเป็นหลัก เลยต้องเทียบสีซ้ำ ไม่งั้นหยิบผิดชนิด
+# โพ 1 ครั้งได้ 2 อย่าง: ทองแดง (เก็บ) กับ ทองคำ (ไม่เก็บ)
+# ทรงไอคอนเหมือนกัน template matching แยกไม่ออก ต้องเทียบสีซ้ำ
+#   bar_template.png = ทองแดง hue 18 sat 181
+#   ทองคำเป็นสีเหลือง hue สูงกว่า
+# วัดแล้ว: ทองแดงจริงบนจอเพี้ยนจาก template ไม่เกิน 6 องศา (สว่าง/มืด/noise/ย่อขยาย)
+# เกณฑ์ 15 องศาเลยกว้างพอรับทองแดงจริง แต่แคบพอกันทองคำ
 CHECK_ITEM_COLOUR = True
 COLOUR_SAT_TOLERANCE = 45.0    # ความอิ่มสีต่างได้ไม่เกินเท่าไหร่
-COLOUR_HUE_TOLERANCE = 35.0    # hue ต่างได้กี่องศา
+COLOUR_HUE_TOLERANCE = 15.0    # hue ต่างได้กี่องศา
 MATCH_CANDIDATES = 5           # ถ้าสีไม่ตรง ไล่ดูตัวถัดไปได้กี่ตัว
 INV_SCROLL_RETRIES = 4
 

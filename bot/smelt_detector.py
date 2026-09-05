@@ -122,13 +122,17 @@ def is_processing(sct):
                   config.PROCESS_BAR_THRESHOLD)
 
 
-def find_item(sct, template_path, region, label="ไอเทม"):
+def find_item(sct, template_path, region, label="ไอเทม", reject_path=None):
     """
     หาช่องไอเทมในบริเวณที่กำหนด
 
-    แร่คนละชนิดรูปทรงเหมือนกันแต่คนละสี (เหล็กสีเทา ทองแดงสีส้ม)
+    ไอเทมคนละชนิดรูปทรงเหมือนกันแต่คนละสี (ทองแดงสีส้ม ทองคำสีเหลือง)
     template matching ดูรูปทรงเป็นหลัก จึงสับสนได้ ต้องเทียบสีซ้ำอีกชั้น
     ตัวที่รูปเข้าแต่สีไม่ตรงจะถูกข้ามไปดูตัวถัดไป
+
+    reject_path = รูปไอเทมที่ "ห้ามหยิบ" (เช่น ทองคำ) ถ้ามีไฟล์นี้
+    ช่องที่สีใกล้ของห้ามหยิบมากกว่าใกล้ของที่ต้องการ จะถูกข้ามทันที
+    วิธีนี้ไม่ต้องเดาว่าทองคำ hue เท่าไหร่ - เทียบจากรูปจริงตรง ๆ
 
     Returns: (x, y) กลางช่อง หรือ None
     """
@@ -144,6 +148,11 @@ def find_item(sct, template_path, region, label="ไอเทม"):
     res = cv2.matchTemplate(scene, tmpl, cv2.TM_CCOEFF_NORMED)
     th, tw = tmpl.shape[:2]
     want = _colour_sig(tmpl) if config.CHECK_ITEM_COLOUR else None
+    avoid = None
+    if want is not None and reject_path:
+        rej = _template(reject_path)
+        if rej is not None:
+            avoid = _colour_sig(rej)
     best_score = None
 
     for _ in range(config.MATCH_CANDIDATES):
@@ -155,10 +164,19 @@ def find_item(sct, template_path, region, label="ไอเทม"):
 
         if want is not None:
             patch = scene[loc[1]:loc[1] + th, loc[0]:loc[0] + tw]
-            dh, ds = _colour_gap(want, _colour_sig(patch))
-            if ds > config.COLOUR_SAT_TOLERANCE or dh > config.COLOUR_HUE_TOLERANCE:
+            got = _colour_sig(patch)
+            dh, ds = _colour_gap(want, got)
+            bad = ds > config.COLOUR_SAT_TOLERANCE or dh > config.COLOUR_HUE_TOLERANCE
+            why = f"hue ต่าง {dh:.0f}° sat ต่าง {ds:.0f}"
+            if not bad and avoid is not None:
+                rh, rs = _colour_gap(avoid, got)
+                if rh < dh:
+                    bad = True
+                    why = (f"สีใกล้ของที่ห้ามหยิบมากกว่า "
+                           f"(ห่างของห้ามหยิบ {rh:.0f}° ห่าง{label} {dh:.0f}°)")
+            if bad:
                 print(f"[detector] เจอรูปคล้าย{label} (score={score:.2f}) "
-                      f"แต่สีไม่ตรง (hue ต่าง {dh:.0f}° sat ต่าง {ds:.0f}) - ข้าม")
+                      f"แต่สีไม่ตรง ({why}) - ข้าม")
                 # ลบยอดนี้ทิ้งแล้วดูตัวถัดไป
                 x0 = max(0, loc[0] - tw // 2)
                 y0 = max(0, loc[1] - th // 2)
