@@ -9,9 +9,7 @@ calibrate.py - จับพิกัดและ template ให้บอทแ�
   เปิดท้ายรถแล้ว (กด L ให้หน้า INVENTORY | SECONDARY ขึ้น):
      [2] กด 2  -> trunk_open.png    (จำเป็น! ไม่มีอันนี้บอทจะไม่คลิกเลย)
      [3] ชี้ไอคอนแร่ดิบในท้ายรถ กด 3   -> ore_template.png
-     [4] ชี้ไอคอนทองแดง (ของที่จะเก็บ) กด 4  -> bar_template.png
-     [g] ชี้ไอคอนทองคำ (ของที่ไม่เก็บ) กด g  -> bar_reject.png
-         * ไม่ถ่ายก็ได้ แต่ถ่ายไว้จะกันหยิบทองคำผิดได้แน่นอนกว่า
+     [4] ชี้ไอคอนแท่งที่โพเสร็จ กด 4    -> bar_template.png
      [5] ชี้ช่องว่างฝั่งกระเป๋า กด 5     -> DROP_TO_INVENTORY
      [6] ชี้ช่องว่างฝั่งท้ายรถ กด 6      -> DROP_TO_TRUNK
 
@@ -76,28 +74,6 @@ def main():
             path = os.path.join(TEMPLATE_DIR, filename)
             cv2.imwrite(path, bgr)
             print(f"[{key}] บันทึก {label} ที่ ({x},{y}) -> {filename}")
-            report_colour(filename, bgr)
-
-        def report_colour(filename, bgr):
-            """บอกสีที่วัดได้ + เตือนถ้าทองแดงกับทองคำสีใกล้กันเกินไป"""
-            import smelt_detector as det
-            sig = det._colour_sig(bgr)
-            if sig is None:
-                print("      (ภาพมืดเกินไป วัดสีไม่ได้ - เล็งให้โดนไอคอน)")
-                return
-            print(f"      สีที่วัดได้: hue {sig[0]:.0f} องศา  sat {sig[1]:.0f}")
-            other = ("bar_reject.png" if filename == "bar_template.png"
-                     else "bar_template.png" if filename == "bar_reject.png"
-                     else None)
-            if other is None:
-                return
-            img = det._imread(os.path.join(TEMPLATE_DIR, other))
-            if img is None:
-                return
-            dh, ds = det._colour_gap(sig, det._colour_sig(img))
-            print(f"      ทองแดงกับทองคำห่างกัน {dh:.0f} องศา")
-            if dh < 8:
-                print("      [!] ใกล้กันมาก บอทอาจแยกไม่ออก - ลองเล็งใหม่ให้โดนกลางไอคอน")
 
         def crop_to_text(bgr, margin=4):
             """ตัดเหลือเฉพาะตัวอักษรสว่าง - พื้นหลังเกมมองทะลุแผงเมนูได้
@@ -128,9 +104,7 @@ def main():
         keyboard.add_hotkey("3", lambda: save_icon(
             "3", "ore_template.png", "ไอคอนแร่ดิบ"))
         keyboard.add_hotkey("4", lambda: save_icon(
-            "4", "bar_template.png", "ไอคอนทองแดง (ของที่จะเก็บ)"))
-        keyboard.add_hotkey("g", lambda: save_icon(
-            "g", "bar_reject.png", "ไอคอนทองคำ (ของที่ไม่เก็บ)"))
+            "4", "bar_template.png", "ไอคอนแท่งที่โพเสร็จ"))
         keyboard.add_hotkey("5", lambda: rec("5", "DROP_TO_INVENTORY"))
         keyboard.add_hotkey("6", lambda: rec("6", "DROP_TO_TRUNK"))
         keyboard.add_hotkey("7", lambda: rec("7", "BTN_MAX"))

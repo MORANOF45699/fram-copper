@@ -118,12 +118,12 @@ def open_trunk(sct):
     return False
 
 
-def _find_with_scroll(sct, template, region, label, tag, reject=None):
+def _find_with_scroll(sct, template, region, label, tag):
     """
     หาไอเทมในบริเวณที่กำหนด — ไม่เจอก็เลื่อนขึ้นบนสุดแล้วไล่เลื่อนลงหา
     (ของในกระเป๋า/ท้ายรถมีหลายหน้า ของที่ต้องการอาจอยู่นอกจอ)
     """
-    slot = find_item(sct, template, region, label, reject)
+    slot = find_item(sct, template, region, label)
     if slot is not None:
         return slot
 
@@ -133,7 +133,7 @@ def _find_with_scroll(sct, template, region, label, tag, reject=None):
     print(f"[{tag}] หา{label}ไม่เจอ - เลื่อนขึ้นบนสุดแล้วหาใหม่")
     inp.scroll_up(notches=10, x=cx, y=cy)
     time.sleep(0.4)
-    slot = find_item(sct, template, region, label, reject)
+    slot = find_item(sct, template, region, label)
     if slot is not None:
         return slot
 
@@ -143,7 +143,7 @@ def _find_with_scroll(sct, template, region, label, tag, reject=None):
             return None
         inp.scroll_down(notches=2, x=cx, y=cy)
         time.sleep(0.4)
-        slot = find_item(sct, template, region, label, reject)
+        slot = find_item(sct, template, region, label)
         if slot is not None:
             print(f"[{tag}] เจอ{label}หลังเลื่อนลง (ครั้งที่ {i})")
             return slot
@@ -151,7 +151,7 @@ def _find_with_scroll(sct, template, region, label, tag, reject=None):
 
 
 def _move_item(sct, template, from_region, to_region, to_base, label, tag,
-               debug_name="move_failed", reject=None):
+               debug_name="move_failed"):
     """
     ลากไอเทมข้ามฝั่ง แล้วกด Max -> O
 
@@ -168,7 +168,7 @@ def _move_item(sct, template, from_region, to_region, to_base, label, tag,
         if _aborted(tag):
             return False
 
-        slot = _find_with_scroll(sct, template, from_region, label, tag, reject)
+        slot = _find_with_scroll(sct, template, from_region, label, tag)
         if slot is None:
             print(f"[{tag}] ไม่มี{label}ให้ย้ายแล้ว")
             return False
@@ -186,7 +186,7 @@ def _move_item(sct, template, from_region, to_region, to_base, label, tag,
         inp.click(*config.BTN_CONFIRM)
         time.sleep(config.AFTER_MOVE_DELAY)
 
-        if _find_with_scroll(sct, template, to_region, label, tag, reject) is not None:
+        if _find_with_scroll(sct, template, to_region, label, tag) is not None:
             print(f"[{tag}] ย้าย{label}สำเร็จ (เจอที่ปลายทางแล้ว)")
             return True
         if region_changed(sct, from_region, before):
@@ -199,19 +199,14 @@ def _move_item(sct, template, from_region, to_region, to_base, label, tag,
 
 
 def store_bars(sct):
-    """
-    เอาทองแดงในกระเป๋าใส่กลับท้ายรถ (ไม่มีก็ข้าม)
-
-    โพครั้งนึงได้ทั้งทองแดงและทองคำ เก็บแค่ทองแดง ทองคำทิ้งไว้ในกระเป๋า
-    """
-    reject = config.BAR_REJECT_TEMPLATE
+    """เอาแท่งที่โพเสร็จในกระเป๋า ใส่กลับท้ายรถ (ไม่มีก็ข้าม)"""
     if _find_with_scroll(sct, config.BAR_TEMPLATE, config.INVENTORY_REGION,
-                         "ทองแดง", "เก็บ", reject) is None:
-        print("[เก็บ] ไม่มีทองแดงในกระเป๋า - ข้าม")
+                         "แท่งที่โพเสร็จ", "เก็บ") is None:
+        print("[เก็บ] ไม่มีแท่งที่โพเสร็จในกระเป๋า - ข้าม")
         return True
     return _move_item(sct, config.BAR_TEMPLATE, config.INVENTORY_REGION,
                       config.TRUNK_REGION, config.DROP_TO_TRUNK,
-                      "ทองแดง", "เก็บ", "store_bars_failed", reject)
+                      "แท่งที่โพเสร็จ", "เก็บ", "store_bars_failed")
 
 
 def take_ore(sct):
