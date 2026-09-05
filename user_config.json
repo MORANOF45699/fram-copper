@@ -2,13 +2,13 @@
     "WALK_TO_PROCESS": [
         [
             "w",
-            2.0
+            2.5
         ]
     ],
     "WALK_BACK": [
         [
             "w",
-            2.0
+            2.5
         ]
     ],
     "WALK_PREP": true,
