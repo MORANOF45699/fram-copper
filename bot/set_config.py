@@ -24,6 +24,7 @@ defaults = {
     "WALK_PREP_S_DELAY": 2.0,
     "WALK_PREP_AFTER": 0.3,
     "PROCESS_POLL": 3.0,
+    "PROCESS_DONE_CONFIRM": 3,
     "PROCESS_TIMEOUT": 1200,
     "MAX_FAILS": 5,
     "CHECK_INTERVAL": 2.0,
@@ -138,6 +139,10 @@ def main():
         print(f"  [7] รอโพนานสุด               : {cfg['PROCESS_TIMEOUT']:.0f} วิ "
               f"({cfg['PROCESS_TIMEOUT']/60:.0f} นาที)")
         print(f"  [8] เช็คแถบทุก               : {cfg['PROCESS_POLL']:.1f} วิ")
+        print(f"  [d] ยืนยันว่าโพเสร็จกี่รอบติด  : "
+              f"{cfg['PROCESS_DONE_CONFIRM']} รอบ "
+              f"(~{cfg['PROCESS_DONE_CONFIRM'] * cfg['PROCESS_POLL']:.0f} วิ)")
+        print("      * ต่ำไปจะตัดจบทั้งที่ยังโพไม่เสร็จ ตอนหน้าต่างเกมสะดุด")
         print("  -- ทั่วไป --")
         print(f"  [9] พลาดติดกันแล้วหยุด        : {stop}")
         print(f"  [c] วิธีจับภาพ               : {cap}")
@@ -172,6 +177,10 @@ def main():
                 "รอโพนานสุด (วิ)", cfg["PROCESS_TIMEOUT"])
         elif choice == "8":
             cfg["PROCESS_POLL"] = ask_number("เช็คแถบทุกกี่วิ", cfg["PROCESS_POLL"])
+        elif choice == "d":
+            cfg["PROCESS_DONE_CONFIRM"] = ask_number(
+                "หาแถบไม่เจอกี่รอบติด ถึงสรุปว่าโพเสร็จ",
+                cfg["PROCESS_DONE_CONFIRM"], int)
         elif choice == "9":
             cfg["MAX_FAILS"] = ask_number(
                 "พลาดติดกันกี่รอบถึงหยุด (0 = ไม่หยุดเอง)",

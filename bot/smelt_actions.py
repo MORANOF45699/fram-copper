@@ -23,7 +23,7 @@ import smelt_input as inp
 from smelt_detector import (find_item, is_garage_menu_open, is_trunk_open,
                             is_processing, template_available,
                             region_snapshot, region_changed, region_diff_pct,
-                            save_debug_screenshot)
+                            process_bar_score, save_debug_screenshot)
 
 _abort = [False]
 _idle_ref = [None]     # ภาพบริเวณแถบตอนยังไม่ได้โพ (ไว้เทียบว่าแถบหายยัง)
@@ -234,6 +234,13 @@ def press_start_process(sct):
         print(f"[โพ] กด E เริ่มแปรรูป (ครั้งที่ {attempt})...")
         inp.press_e()
         time.sleep(config.WALK_SETTLE_DELAY)
+        # ภาพดำจากเฟรมที่ยังไม่มา ทำให้อ่านว่า "แถบไม่ขึ้น" = คิดว่าแร่หมด
+        # แล้ววิ่งกลับไปเปิดท้ายรถฟรี ๆ ทั้งที่แร่ยังอยู่
+        if not sct.ready():
+            print("[โพ] ยังไม่ได้เฟรมจากเกม - รอแล้วเช็คใหม่")
+            time.sleep(config.PROCESS_POLL)
+            if not sct.ready():
+                continue
         if not check_bar:
             pct = region_diff_pct(sct, config.PROCESS_BAR_REGION, _idle_ref[0])
             if pct >= config.PROCESS_CHANGE_MIN_PCT:
@@ -282,14 +289,25 @@ def wait_processing(sct, on_status=None):
 
         print("[โพ] ไม่มี process_bar.png - ใช้วิธีเทียบภาพแทน")
         t0 = time.time()
+        gone = 0
         while time.time() - t0 < config.PROCESS_TIMEOUT:
             if _abort[0]:
                 return False
+            if not sct.ready():
+                print("[โพ] ยังไม่ได้เฟรมจากเกม - ข้ามรอบนี้ ไม่นับว่าเสร็จ")
+                time.sleep(config.PROCESS_POLL)
+                continue
             pct = region_diff_pct(sct, config.PROCESS_BAR_REGION, idle)
             if pct < config.PROCESS_CHANGE_MIN_PCT:
-                print(f"[โพ] ภาพกลับเหมือนเดิม ({pct:.1f}%) - แปรรูปเสร็จ "
-                      f"({time.time() - t0:.0f} วิ)")
-                return True
+                gone += 1
+                print(f"[โพ] ภาพกลับเหมือนเดิม ({pct:.1f}%) "
+                      f"{gone}/{config.PROCESS_DONE_CONFIRM}")
+                if gone >= config.PROCESS_DONE_CONFIRM:
+                    print(f"[โพ] เหมือนเดิมครบ {gone} รอบติด - แปรรูปเสร็จ "
+                          f"({time.time() - t0:.0f} วิ)")
+                    return True
+            else:
+                gone = 0
             if on_status:
                 on_status(f"กำลังแปรรูป... (ต่างจากตอนว่าง {pct:.0f}%)")
             time.sleep(config.PROCESS_POLL)
@@ -297,13 +315,35 @@ def wait_processing(sct, on_status=None):
         return False
 
     t0 = time.time()
+    gone = 0
+    need = config.PROCESS_DONE_CONFIRM
     while time.time() - t0 < config.PROCESS_TIMEOUT:
         if _abort[0]:
             print("[โพ] ถูกสั่งพักระหว่างรอ")
             return False
-        if not is_processing(sct):
-            print(f"[โพ] แถบหายแล้ว - แปรรูปเสร็จ ({time.time() - t0:.0f} วิ)")
-            return True
+
+        # ยังไม่ได้เฟรมจากหน้าต่างเกม (เพิ่งย้ายหน้าต่าง/เพิ่งจอดนอกจอ)
+        # ภาพที่ได้จะดำล้วน ซึ่งทำให้ "หาแถบไม่เจอ" ทั้งที่ยังโพอยู่
+        # ข้ามรอบนี้ไป ห้ามนับเป็นหลักฐานว่าเสร็จ
+        if not sct.ready():
+            print("[โพ] ยังไม่ได้เฟรมจากเกม - ข้ามรอบนี้ ไม่นับว่าเสร็จ")
+            time.sleep(config.PROCESS_POLL)
+            continue
+
+        score = process_bar_score(sct)
+        if score < config.PROCESS_BAR_THRESHOLD:
+            gone += 1
+            print(f"[โพ] ไม่เจอแถบ (score={score:.2f}) {gone}/{need}")
+            if gone >= need:
+                print(f"[โพ] แถบหายครบ {need} รอบติด - แปรรูปเสร็จ "
+                      f"({time.time() - t0:.0f} วิ)")
+                return True
+        else:
+            if gone:
+                print(f"[โพ] เจอแถบอีกแล้ว (score={score:.2f}) - "
+                      f"นับใหม่ ยังโพไม่เสร็จ")
+            gone = 0
+
         if on_status:
             left = config.PROCESS_TIMEOUT - (time.time() - t0)
             on_status(f"กำลังแปรรูป... (เหลือเวลารอ {left:.0f} วิ)")

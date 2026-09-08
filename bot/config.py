@@ -125,6 +125,10 @@ PROCESS_CHANGE_MIN_PCT = 8.0
 PROCESS_POLL = 3.0           # เช็คแถบทุกกี่วินาที
 PROCESS_TIMEOUT = 600        # รอโพนานสุดกี่วินาที ก่อนยอมแพ้แล้วเริ่มรอบใหม่
 PROCESS_START_RETRIES = 3    # กด E เริ่มโพซ้ำได้กี่ครั้ง
+# ต้องหาแถบไม่เจอกี่รอบติดกัน ถึงจะสรุปว่าโพเสร็จ
+# เช็ครอบเดียวไม่พอ: ตอนย้ายหน้าต่าง/จอดเกมนอกจอ จะได้ภาพดำมาชั่วครู่
+# ภาพดำ = หาแถบไม่เจอ = ตัดจบทั้งที่ยังโพไม่เสร็จ
+PROCESS_DONE_CONFIRM = 3
 
 # ===== เวลา (วินาที) =====
 CHECK_INTERVAL = 2.0
@@ -191,8 +195,9 @@ def _load_user_config():
             g["WALK_TO_PROCESS"] = list(data["WALK_TO_PROCESS"])
         if "WALK_BACK" in data:
             g["WALK_BACK"] = list(data["WALK_BACK"])
-        if "MAX_FAILS" in data:
-            g["MAX_FAILS"] = int(data["MAX_FAILS"])
+        for key in ("MAX_FAILS", "PROCESS_DONE_CONFIRM"):
+            if key in data:
+                g[key] = int(data[key])
         for key in ("CHECK_INTERVAL", "PROCESS_POLL", "PROCESS_TIMEOUT",
                     "E_MENU_DELAY", "TRUNK_OPEN_DELAY", "WALK_SETTLE_DELAY",
                     "WALK_PREP_C1_DELAY", "WALK_PREP_S_DELAY",

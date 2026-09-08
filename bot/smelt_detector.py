@@ -123,6 +123,17 @@ def find_item(sct, template_path, region, label="ไอเทม"):
     return (x, y)
 
 
+def process_bar_score(sct):
+    """คะแนนความเหมือนของแถบ Processing (ไว้พิมพ์ลง log ตอนหาสาเหตุ)"""
+    tmpl = _template(config.PROCESS_BAR_TEMPLATE)
+    if tmpl is None:
+        return -1.0
+    scene = _grab(sct, config.PROCESS_BAR_REGION)
+    if tmpl.shape[0] > scene.shape[0] or tmpl.shape[1] > scene.shape[1]:
+        return -1.0
+    return float(cv2.minMaxLoc(cv2.matchTemplate(scene, tmpl,
+                                                 cv2.TM_CCOEFF_NORMED))[1])
+
 def region_snapshot(sct, region):
     """ภาพย่อของบริเวณหนึ่ง ไว้เทียบว่ามีอะไรเปลี่ยนไปไหม"""
     return _grab(sct, region).copy()
