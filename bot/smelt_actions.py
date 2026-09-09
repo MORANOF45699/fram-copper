@@ -199,14 +199,14 @@ def _move_item(sct, template, from_region, to_region, to_base, label, tag,
         drop = candidates[(attempt - 1) % len(candidates)]
         print(f"[{tag}] ลาก{label} {slot} -> {drop} "
               f"(ครั้งที่ {attempt}/{config.DRAG_RETRIES})")
-        inp.drag(*slot, *drop, duration=config.DRAG_DURATION)
-        time.sleep(config.DIALOG_OPEN_DELAY)
+        inp.drag(*slot, *drop, duration=config.t("DRAG_DURATION"))
+        time.sleep(config.t("DIALOG_OPEN_DELAY"))
 
         print(f"[{tag}] คลิก Max แล้วยืนยัน O")
         inp.click(*config.BTN_MAX)
-        time.sleep(config.CLICK_DELAY)
+        time.sleep(config.t("CLICK_DELAY"))
         inp.click(*config.BTN_CONFIRM)
-        time.sleep(config.AFTER_MOVE_DELAY)
+        time.sleep(config.t("AFTER_MOVE_DELAY"))
 
         if _find_with_scroll(sct, template, to_region, label, tag) is not None:
             print(f"[{tag}] ย้าย{label}สำเร็จ (เจอที่ปลายทางแล้ว)")

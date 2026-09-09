@@ -24,6 +24,7 @@ defaults = {
     "WALK_PREP_S_DELAY": 2.0,
     "WALK_PREP_AFTER": 0.3,
     "PROCESS_POLL": 3.0,
+    "SPEED_PERCENT": 100.0,
     "DIALOG_OPEN_DELAY": 0.6,
     "CLICK_DELAY": 0.25,
     "DRAG_DURATION": 0.35,
@@ -148,11 +149,16 @@ def main():
               f"{cfg['PROCESS_DONE_CONFIRM']} รอบ "
               f"(~{cfg['PROCESS_DONE_CONFIRM'] * cfg['PROCESS_POLL']:.0f} วิ)")
         print("      * ต่ำไปจะตัดจบทั้งที่ยังโพไม่เสร็จ ตอนหน้าต่างเกมสะดุด")
+        pct = float(cfg.get("SPEED_PERCENT", 100.0))
+        k = 100.0 / max(25.0, min(400.0, pct))
         move_secs = (cfg["DRAG_DURATION"] + cfg["DRAG_GRAB_DELAY"] * 3
                      + cfg["DIALOG_OPEN_DELAY"] + cfg["CLICK_DELAY"]
-                     + cfg["AFTER_MOVE_DELAY"])
+                     + cfg["AFTER_MOVE_DELAY"]) * k
         print("  -- ความไวตอนลากของ / กด Max / กด O --")
-        print(f"  [v] ปรับความไวทั้งชุด         : ย้ายของ 1 ครั้ง ~{move_secs:.1f} วิ")
+        print(f"  [%] ความเร็วรวม               : {pct:.0f}%  "
+              f"(ย้ายของ 1 ครั้ง ~{move_secs:.1f} วิ)")
+        print("      มากกว่า 100 = เร็วขึ้น / น้อยกว่า 100 = ช้าลง ปลอดภัยขึ้น")
+        print(f"  [v] ปรับทีละค่าเอง            : ลาก {cfg['DRAG_DURATION']:.2f} วิ ฯลฯ")
         print(f"      ลาก {cfg['DRAG_DURATION']:.2f} | รอ dialog {cfg['DIALOG_OPEN_DELAY']:.2f} | "
               f"Max->O {cfg['CLICK_DELAY']:.2f} | หลังยืนยัน {cfg['AFTER_MOVE_DELAY']:.2f}")
         print("      * ไวไปแล้วลากพลาดบ่อย ให้เพิ่มค่ากลับขึ้น")
@@ -198,6 +204,10 @@ def main():
             cfg["MAX_FAILS"] = ask_number(
                 "พลาดติดกันกี่รอบถึงหยุด (0 = ไม่หยุดเอง)",
                 cfg["MAX_FAILS"], int)
+        elif choice == "%":
+            cfg["SPEED_PERCENT"] = ask_number(
+                "ความเร็วรวม % (100 = ปกติ, 200 = เร็วขึ้น 2 เท่า, 50 = ช้าลงครึ่ง)",
+                cfg.get("SPEED_PERCENT", 100.0))
         elif choice == "v":
             print("\n  กด Enter ผ่านไปเลย = ใช้ค่าเดิม")
             cfg["DRAG_DURATION"] = ask_number(

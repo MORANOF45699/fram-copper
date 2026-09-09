@@ -176,6 +176,32 @@ KEY_TOGGLE = "f10"
 KEY_TOGGLE_HUD = "f11"
 
 
+# ===== ความเร็วรวม (เปอร์เซ็นต์) =====
+# 100 = ใช้ค่าหน่วงตามที่ตั้งไว้ข้างบนตรง ๆ
+# 200 = หน่วงครึ่งเดียว (เร็วขึ้น 2 เท่า)   50 = หน่วงสองเท่า (ช้าลง ปลอดภัยขึ้น)
+# ปรับตัวเดียวคุมทั้งชุด ไม่ต้องไล่แก้ทีละค่า
+SPEED_PERCENT = 100.0
+SPEED_MIN, SPEED_MAX = 25.0, 400.0
+
+# ค่าที่โดนคูณด้วยความเร็วรวม (เฉพาะตอนลากของ/กดปุ่ม ไม่ยุ่งกับเวลาเดิน)
+SPEED_SCALED_KEYS = (
+    "DRAG_DURATION", "DRAG_GRAB_DELAY", "DIALOG_OPEN_DELAY", "CLICK_DELAY",
+    "AFTER_MOVE_DELAY", "CURSOR_SETTLE", "CURSOR_SETTLE_RIGHT", "BUTTON_HOLD",
+)
+
+
+def t(name, fallback=0.0):
+    """
+    เวลาหน่วงหลังคิดความเร็วรวมแล้ว
+    ชื่อที่ไม่ได้อยู่ใน SPEED_SCALED_KEYS จะคืนค่าเดิม ไม่โดนคูณ
+    """
+    base = float(globals().get(name, fallback))
+    if name not in SPEED_SCALED_KEYS:
+        return base
+    pct = min(max(float(SPEED_PERCENT), SPEED_MIN), SPEED_MAX)
+    return base * 100.0 / pct
+
+
 def _load_calibration():
     if not os.path.exists(CALIBRATION_PATH):
         return
@@ -208,6 +234,8 @@ def _load_user_config():
         for key in ("MAX_FAILS", "PROCESS_DONE_CONFIRM", "DRAG_STEPS"):
             if key in data:
                 g[key] = int(data[key])
+        if "SPEED_PERCENT" in data:
+            g["SPEED_PERCENT"] = float(data["SPEED_PERCENT"])
         for key in ("CHECK_INTERVAL", "PROCESS_POLL", "PROCESS_TIMEOUT",
                     "E_MENU_DELAY", "TRUNK_OPEN_DELAY", "WALK_SETTLE_DELAY",
                     "WALK_PREP_C1_DELAY", "WALK_PREP_S_DELAY",
