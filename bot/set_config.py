@@ -24,6 +24,11 @@ defaults = {
     "WALK_PREP_S_DELAY": 2.0,
     "WALK_PREP_AFTER": 0.3,
     "PROCESS_POLL": 3.0,
+    "DIALOG_OPEN_DELAY": 0.6,
+    "CLICK_DELAY": 0.25,
+    "DRAG_DURATION": 0.35,
+    "DRAG_GRAB_DELAY": 0.10,
+    "AFTER_MOVE_DELAY": 0.8,
     "PROCESS_DONE_CONFIRM": 3,
     "PROCESS_TIMEOUT": 1200,
     "MAX_FAILS": 5,
@@ -143,6 +148,14 @@ def main():
               f"{cfg['PROCESS_DONE_CONFIRM']} รอบ "
               f"(~{cfg['PROCESS_DONE_CONFIRM'] * cfg['PROCESS_POLL']:.0f} วิ)")
         print("      * ต่ำไปจะตัดจบทั้งที่ยังโพไม่เสร็จ ตอนหน้าต่างเกมสะดุด")
+        move_secs = (cfg["DRAG_DURATION"] + cfg["DRAG_GRAB_DELAY"] * 3
+                     + cfg["DIALOG_OPEN_DELAY"] + cfg["CLICK_DELAY"]
+                     + cfg["AFTER_MOVE_DELAY"])
+        print("  -- ความไวตอนลากของ / กด Max / กด O --")
+        print(f"  [v] ปรับความไวทั้งชุด         : ย้ายของ 1 ครั้ง ~{move_secs:.1f} วิ")
+        print(f"      ลาก {cfg['DRAG_DURATION']:.2f} | รอ dialog {cfg['DIALOG_OPEN_DELAY']:.2f} | "
+              f"Max->O {cfg['CLICK_DELAY']:.2f} | หลังยืนยัน {cfg['AFTER_MOVE_DELAY']:.2f}")
+        print("      * ไวไปแล้วลากพลาดบ่อย ให้เพิ่มค่ากลับขึ้น")
         print("  -- ทั่วไป --")
         print(f"  [9] พลาดติดกันแล้วหยุด        : {stop}")
         print(f"  [c] วิธีจับภาพ               : {cap}")
@@ -185,6 +198,18 @@ def main():
             cfg["MAX_FAILS"] = ask_number(
                 "พลาดติดกันกี่รอบถึงหยุด (0 = ไม่หยุดเอง)",
                 cfg["MAX_FAILS"], int)
+        elif choice == "v":
+            print("\n  กด Enter ผ่านไปเลย = ใช้ค่าเดิม")
+            cfg["DRAG_DURATION"] = ask_number(
+                "  เวลาลากของ (วิ)", cfg["DRAG_DURATION"])
+            cfg["DRAG_GRAB_DELAY"] = ask_number(
+                "  รอตอนจับ/ปล่อยของ (วิ)", cfg["DRAG_GRAB_DELAY"])
+            cfg["DIALOG_OPEN_DELAY"] = ask_number(
+                "  รอ dialog ใส่จำนวนเด้ง (วิ)", cfg["DIALOG_OPEN_DELAY"])
+            cfg["CLICK_DELAY"] = ask_number(
+                "  รอระหว่างกด Max กับ O (วิ)", cfg["CLICK_DELAY"])
+            cfg["AFTER_MOVE_DELAY"] = ask_number(
+                "  รอหลังยืนยันย้ายของ (วิ)", cfg["AFTER_MOVE_DELAY"])
         elif choice == "c":
             if cfg.get("CAPTURE_MODE") == "window":
                 cfg["CAPTURE_MODE"] = "screen"

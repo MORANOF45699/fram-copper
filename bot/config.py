@@ -134,10 +134,20 @@ PROCESS_DONE_CONFIRM = 3
 CHECK_INTERVAL = 2.0
 E_MENU_DELAY = 2.5           # รอเมนู GARAGE เปิดหลังกด E
 TRUNK_OPEN_DELAY = 3.0       # รอหน้าท้ายรถเปิดหลังคลิก Open Trunk
-DIALOG_OPEN_DELAY = 1.5      # รอ dialog ใส่จำนวนเด้งหลังลาก
-CLICK_DELAY = 0.8
-DRAG_DURATION = 0.8
-AFTER_MOVE_DELAY = 2.0       # รอหลังยืนยันย้ายของ
+# ===== ความไวตอนลากของ / กด Max / กด O =====
+# ค่าพวกนี้เดิมตั้งเผื่อไว้เยอะมาก ทำให้ย้ายของ 1 ครั้งกินเวลาเกิน 7 วิ
+# ถ้าเครื่องช้าหรือเซิร์ฟหน่วง แล้วลากพลาดบ่อย ให้เพิ่มค่ากลับขึ้นไป
+# (set_config เมนู [v] ปรับได้ทั้งชุด แก้ตอนบอทรันอยู่ได้เลย)
+DIALOG_OPEN_DELAY = 0.6      # รอ dialog ใส่จำนวนเด้งหลังลาก
+CLICK_DELAY = 0.25           # รอระหว่างกด Max กับกด O
+DRAG_DURATION = 0.35         # เวลาที่ใช้ลากจากต้นทางไปปลายทาง
+DRAG_STEPS = 12              # ลากเป็นกี่ก้าว (น้อยลง = เบาเครื่องขึ้น)
+DRAG_GRAB_DELAY = 0.10       # รอตอนกดปุ่มจับของ และตอนถึงปลายทางก่อนปล่อย
+AFTER_MOVE_DELAY = 0.8       # รอหลังยืนยันย้ายของ
+CURSOR_SETTLE = 0.08         # รอให้เกมรับตำแหน่ง cursor ก่อนคลิกซ้าย
+CURSOR_SETTLE_RIGHT = 0.15   # ก่อนคลิกขวา (ไวเกินแล้วเมนูไม่ขึ้น)
+BUTTON_HOLD = 0.06           # กดปุ่มเมาส์ค้างนานแค่ไหน
+UI_POLL = 0.15               # เช็คทุกกี่วิ ว่าเมนู/หน้าท้ายรถขึ้นหรือยัง
 AFTER_CLOSE_DELAY = 1.5      # รอหลังกด ESC
 WALK_SETTLE_DELAY = 1.0      # รอหลังเดินถึงที่
 
@@ -195,13 +205,16 @@ def _load_user_config():
             g["WALK_TO_PROCESS"] = list(data["WALK_TO_PROCESS"])
         if "WALK_BACK" in data:
             g["WALK_BACK"] = list(data["WALK_BACK"])
-        for key in ("MAX_FAILS", "PROCESS_DONE_CONFIRM"):
+        for key in ("MAX_FAILS", "PROCESS_DONE_CONFIRM", "DRAG_STEPS"):
             if key in data:
                 g[key] = int(data[key])
         for key in ("CHECK_INTERVAL", "PROCESS_POLL", "PROCESS_TIMEOUT",
                     "E_MENU_DELAY", "TRUNK_OPEN_DELAY", "WALK_SETTLE_DELAY",
                     "WALK_PREP_C1_DELAY", "WALK_PREP_S_DELAY",
-                    "WALK_PREP_AFTER"):
+                    "WALK_PREP_AFTER", "DIALOG_OPEN_DELAY", "CLICK_DELAY",
+                    "DRAG_DURATION", "DRAG_GRAB_DELAY", "AFTER_MOVE_DELAY",
+                    "CURSOR_SETTLE", "CURSOR_SETTLE_RIGHT", "BUTTON_HOLD",
+                    "UI_POLL"):
             if key in data:
                 g[key] = float(data[key])
         for key in ("CAPTURE_MODE", "KEY_TOGGLE", "KEY_TOGGLE_HUD"):

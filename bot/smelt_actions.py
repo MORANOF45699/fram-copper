@@ -46,6 +46,24 @@ def _aborted(tag):
     return True
 
 
+def _wait_for(sct, check, timeout, tag, what):
+    """
+    รอจนกว่า check() จะเป็นจริง แล้วไปต่อทันที (ไม่รอจนครบเวลา)
+    เดิมรอตายตัวเต็มเวลาทุกครั้ง ทั้งที่เมนูขึ้นตั้งแต่ 0.3 วิ
+    คืน True ถ้าเห็น, False ถ้าครบเวลาแล้วยังไม่เห็น
+    """
+    poll = config.UI_POLL
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        if _abort[0]:
+            return False
+        # เฟรมยังไม่มา อ่านอะไรก็ได้ภาพดำ ไม่นับ รอต่อ
+        if sct.ready() and check(sct):
+            print(f"[{tag}] เห็น{what}แล้ว ({time.time() - t0:.1f} วิ)")
+            return True
+        time.sleep(poll)
+    return False
+
 def _can_click(sct, tag):
     """
     ปลอดภัยพอที่จะคลิกไหม - ต้องยืนยันได้ว่าหน้าต่างท้ายรถเปิดอยู่
@@ -83,8 +101,12 @@ def open_trunk(sct):
             return False
         print(f"[เปิด] กด E ที่เสา GARAGE (ครั้งที่ {attempt})...")
         inp.press_e()
-        time.sleep(config.E_MENU_DELAY)
-        if not check_menu or is_garage_menu_open(sct):
+        if not check_menu:
+            time.sleep(config.E_MENU_DELAY)
+            opened_menu = True
+            break
+        if _wait_for(sct, is_garage_menu_open, config.E_MENU_DELAY,
+                     "เปิด", "เมนู GARAGE"):
             opened_menu = True
             break
         print("[เปิด] เมนู GARAGE ยังไม่ขึ้น - ลองกด E ใหม่")
@@ -104,11 +126,11 @@ def open_trunk(sct):
             return False
         print(f"[เปิด] กด L เปิดท้ายรถ (ครั้งที่ {attempt})...")
         inp.press_l()
-        time.sleep(config.TRUNK_OPEN_DELAY)
         if not check_trunk:
+            time.sleep(config.TRUNK_OPEN_DELAY)
             return True
-        if is_trunk_open(sct):
-            print("[เปิด] หน้าท้ายรถเปิดแล้ว")
+        if _wait_for(sct, is_trunk_open, config.TRUNK_OPEN_DELAY,
+                     "เปิด", "หน้าท้ายรถ"):
             return True
         print("[เปิด] หน้าท้ายรถยังไม่เปิด - ลองกด L ใหม่")
 
