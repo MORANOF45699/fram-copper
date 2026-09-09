@@ -93,9 +93,10 @@ def bot_loop():
             state["reset_fails"] = True
             set_status("เริ่มทำงาน", "#2ecc71")
         else:
-            request_abort()
+            request_abort()          # ปลุกทุกจุดที่กำลังรอ ให้เลิกทันที
             inp.unpark_game()
-            set_status(f"พัก - กด {config.KEY_TOGGLE.upper()} เริ่มต่อ", "#f39c12")
+            set_status(f"หยุดแล้ว - กด {config.KEY_TOGGLE.upper()} เริ่มรอบใหม่",
+                       "#f39c12")
 
     keyboard.add_hotkey(config.KEY_TOGGLE, toggle)
 
@@ -126,6 +127,14 @@ def bot_loop():
             covered[0] = False
 
             ok = one_cycle(sct, state, lambda m: set_status(m, "#3498db"))
+
+            # กด F10 ระหว่างรอบ = ตั้งใจหยุด ไม่ใช่รอบที่พลาด
+            # กด F10 อีกทีจะเริ่มรอบใหม่ตั้งแต่ต้น ไม่ทำต่อจากที่ค้างไว้
+            if not state["active"]:
+                set_status(f"หยุดแล้ว - กด {config.KEY_TOGGLE.upper()} เริ่มรอบใหม่",
+                           "#f39c12")
+                continue
+
             if ok:
                 fails = 0
                 set_status("จบรอบ - เริ่มรอบใหม่", "#2ecc71")

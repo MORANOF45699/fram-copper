@@ -135,6 +135,39 @@ def scroll_down(notches=3, x=None, y=None, delay=0.08):
         time.sleep(delay)
 
 
+# ===== หยุดกลางคัน =====
+# กด F10 ตอนบอทกำลังรอ/กำลังกดปุ่มค้างอยู่ ต้องหยุดทันที ไม่ใช่รอให้ครบเวลา
+# ปุ่มที่กดค้างไว้ต้องถูกปล่อย ไม่งั้นตัวละครวิ่งต่อเอง
+_stop = [False]
+
+
+def request_stop():
+    _stop[0] = True
+
+
+def clear_stop():
+    _stop[0] = False
+
+
+def stopped():
+    return _stop[0]
+
+
+def sleep(seconds, slice_=0.05):
+    """
+    รอแบบตื่นทันทีเมื่อโดนสั่งหยุด
+    คืน True ถ้ารอครบ, False ถ้าโดนสั่งหยุดกลางทาง
+    """
+    end = time.time() + float(seconds)
+    while True:
+        left = end - time.time()
+        if left <= 0:
+            return True
+        if _stop[0]:
+            return False
+        time.sleep(min(slice_, left))
+
+
 def press_key(scan_code, duration=0.08):
     """กดปุ่มแล้วปล่อย"""
     _key_event(scan_code, KEYEVENTF_SCANCODE)
@@ -171,10 +204,15 @@ def press_e():
 
 
 def hold_key(scan_code, seconds):
-    """กดปุ่มค้างไว้กี่วินาที (ใช้เดิน)"""
+    """
+    กดปุ่มค้างไว้กี่วินาที (ใช้เดิน)
+    โดนสั่งหยุดกลางทาง = ปล่อยปุ่มทันที ไม่ปล่อยตัวละครวิ่งต่อ
+    """
     _key_event(scan_code, KEYEVENTF_SCANCODE)
-    time.sleep(seconds)
-    _key_event(scan_code, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP)
+    try:
+        sleep(seconds)
+    finally:
+        _key_event(scan_code, KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP)
 
 
 WALK_KEYS = {"w": KEY_W, "s": KEY_S, "a": KEY_A, "d": KEY_D}
@@ -450,15 +488,19 @@ def drag(x1, y1, x2, y2, duration=None, steps=None):
         steps = max(4, int(getattr(config, "DRAG_STEPS", 12)))
     grab = _t("DRAG_GRAB_DELAY", 0.10)
     move_to(x1, y1)
-    time.sleep(grab)
+    sleep(grab)
     _mouse_event(MOUSEEVENTF_LEFTDOWN)
-    time.sleep(grab)          # ให้เกมรู้ว่าจับของอยู่ ก่อนเริ่มลาก
-    for i in range(1, steps + 1):
-        t = i / steps
-        move_to(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
-        time.sleep(duration / steps)
-    time.sleep(grab)          # ให้เกมรู้ตำแหน่งปลายทาง ก่อนปล่อยปุ่ม
-    _mouse_event(MOUSEEVENTF_LEFTUP)
+    try:
+        sleep(grab)           # ให้เกมรู้ว่าจับของอยู่ ก่อนเริ่มลาก
+        for i in range(1, steps + 1):
+            if _stop[0]:      # โดนสั่งหยุด - เลิกลาก แต่ต้องปล่อยปุ่มก่อน
+                break
+            t = i / steps
+            move_to(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)
+            sleep(duration / steps)
+        sleep(grab)           # ให้เกมรู้ตำแหน่งปลายทาง ก่อนปล่อยปุ่ม
+    finally:
+        _mouse_event(MOUSEEVENTF_LEFTUP)
 
 
 if __name__ == '__main__':

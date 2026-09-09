@@ -32,10 +32,20 @@ _idle_ref = [None]     # ภาพบริเวณแถบตอนยัง�
 def request_abort():
     """สั่งให้ขั้นตอนที่กำลังทำอยู่หยุดทันที (กด F10 พัก)"""
     _abort[0] = True
+    inp.request_stop()      # ปลุกการรอ/ปล่อยปุ่มที่กดค้างอยู่ทันที
 
 
 def clear_abort():
     _abort[0] = False
+    inp.clear_stop()
+
+
+def _sleep(seconds):
+    """
+    รอแบบตื่นทันทีเมื่อกด F10 พัก
+    คืน True ถ้ารอครบ, False ถ้าโดนสั่งหยุด
+    """
+    return inp.sleep(seconds) and not _abort[0]
 
 
 def _aborted(tag):
@@ -61,7 +71,7 @@ def _wait_for(sct, check, timeout, tag, what):
         if sct.ready() and check(sct):
             print(f"[{tag}] เห็น{what}แล้ว ({time.time() - t0:.1f} วิ)")
             return True
-        time.sleep(poll)
+        _sleep(poll)
     return False
 
 def _can_click(sct, tag):
@@ -102,7 +112,7 @@ def open_trunk(sct):
         print(f"[เปิด] กด E ที่เสา GARAGE (ครั้งที่ {attempt})...")
         inp.press_e()
         if not check_menu:
-            time.sleep(config.E_MENU_DELAY)
+            _sleep(config.E_MENU_DELAY)
             opened_menu = True
             break
         if _wait_for(sct, is_garage_menu_open, config.E_MENU_DELAY,
@@ -127,7 +137,7 @@ def open_trunk(sct):
         print(f"[เปิด] กด L เปิดท้ายรถ (ครั้งที่ {attempt})...")
         inp.press_l()
         if not check_trunk:
-            time.sleep(config.TRUNK_OPEN_DELAY)
+            _sleep(config.TRUNK_OPEN_DELAY)
             return True
         if _wait_for(sct, is_trunk_open, config.TRUNK_OPEN_DELAY,
                      "เปิด", "หน้าท้ายรถ"):
@@ -154,7 +164,7 @@ def _find_with_scroll(sct, template, region, label, tag):
 
     print(f"[{tag}] หา{label}ไม่เจอ - เลื่อนขึ้นบนสุดแล้วหาใหม่")
     inp.scroll_up(notches=10, x=cx, y=cy)
-    time.sleep(0.4)
+    _sleep(0.4)
     slot = find_item(sct, template, region, label)
     if slot is not None:
         return slot
@@ -164,7 +174,7 @@ def _find_with_scroll(sct, template, region, label, tag):
         if _abort[0]:
             return None
         inp.scroll_down(notches=2, x=cx, y=cy)
-        time.sleep(0.4)
+        _sleep(0.4)
         slot = find_item(sct, template, region, label)
         if slot is not None:
             print(f"[{tag}] เจอ{label}หลังเลื่อนลง (ครั้งที่ {i})")
@@ -200,13 +210,13 @@ def _move_item(sct, template, from_region, to_region, to_base, label, tag,
         print(f"[{tag}] ลาก{label} {slot} -> {drop} "
               f"(ครั้งที่ {attempt}/{config.DRAG_RETRIES})")
         inp.drag(*slot, *drop, duration=config.t("DRAG_DURATION"))
-        time.sleep(config.t("DIALOG_OPEN_DELAY"))
+        _sleep(config.t("DIALOG_OPEN_DELAY"))
 
         print(f"[{tag}] คลิก Max แล้วยืนยัน O")
         inp.click(*config.BTN_MAX)
-        time.sleep(config.t("CLICK_DELAY"))
+        _sleep(config.t("CLICK_DELAY"))
         inp.click(*config.BTN_CONFIRM)
-        time.sleep(config.t("AFTER_MOVE_DELAY"))
+        _sleep(config.t("AFTER_MOVE_DELAY"))
 
         if _find_with_scroll(sct, template, to_region, label, tag) is not None:
             print(f"[{tag}] ย้าย{label}สำเร็จ (เจอที่ปลายทางแล้ว)")
@@ -255,12 +265,12 @@ def press_start_process(sct):
             return False
         print(f"[โพ] กด E เริ่มแปรรูป (ครั้งที่ {attempt})...")
         inp.press_e()
-        time.sleep(config.WALK_SETTLE_DELAY)
+        _sleep(config.WALK_SETTLE_DELAY)
         # ภาพดำจากเฟรมที่ยังไม่มา ทำให้อ่านว่า "แถบไม่ขึ้น" = คิดว่าแร่หมด
         # แล้ววิ่งกลับไปเปิดท้ายรถฟรี ๆ ทั้งที่แร่ยังอยู่
         if not sct.ready():
             print("[โพ] ยังไม่ได้เฟรมจากเกม - รอแล้วเช็คใหม่")
-            time.sleep(config.PROCESS_POLL)
+            _sleep(config.PROCESS_POLL)
             if not sct.ready():
                 continue
         if not check_bar:
@@ -286,7 +296,7 @@ def walk_to_process():
              prep_c1_delay=config.WALK_PREP_C1_DELAY,
              prep_s_delay=config.WALK_PREP_S_DELAY,
              prep_after=config.WALK_PREP_AFTER)
-    time.sleep(config.WALK_SETTLE_DELAY)
+    _sleep(config.WALK_SETTLE_DELAY)
 
 
 def wait_processing(sct, on_status=None):
@@ -305,7 +315,7 @@ def wait_processing(sct, on_status=None):
             while waited < config.PROCESS_TIMEOUT:
                 if _abort[0]:
                     return False
-                time.sleep(config.PROCESS_POLL)
+                _sleep(config.PROCESS_POLL)
                 waited += config.PROCESS_POLL
             return True
 
@@ -317,7 +327,7 @@ def wait_processing(sct, on_status=None):
                 return False
             if not sct.ready():
                 print("[โพ] ยังไม่ได้เฟรมจากเกม - ข้ามรอบนี้ ไม่นับว่าเสร็จ")
-                time.sleep(config.PROCESS_POLL)
+                _sleep(config.PROCESS_POLL)
                 continue
             pct = region_diff_pct(sct, config.PROCESS_BAR_REGION, idle)
             if pct < config.PROCESS_CHANGE_MIN_PCT:
@@ -332,7 +342,7 @@ def wait_processing(sct, on_status=None):
                 gone = 0
             if on_status:
                 on_status(f"กำลังแปรรูป... (ต่างจากตอนว่าง {pct:.0f}%)")
-            time.sleep(config.PROCESS_POLL)
+            _sleep(config.PROCESS_POLL)
         save_debug_screenshot(sct, "process_timeout")
         return False
 
@@ -349,7 +359,7 @@ def wait_processing(sct, on_status=None):
         # ข้ามรอบนี้ไป ห้ามนับเป็นหลักฐานว่าเสร็จ
         if not sct.ready():
             print("[โพ] ยังไม่ได้เฟรมจากเกม - ข้ามรอบนี้ ไม่นับว่าเสร็จ")
-            time.sleep(config.PROCESS_POLL)
+            _sleep(config.PROCESS_POLL)
             continue
 
         score = process_bar_score(sct)
@@ -369,7 +379,7 @@ def wait_processing(sct, on_status=None):
         if on_status:
             left = config.PROCESS_TIMEOUT - (time.time() - t0)
             on_status(f"กำลังแปรรูป... (เหลือเวลารอ {left:.0f} วิ)")
-        time.sleep(config.PROCESS_POLL)
+        _sleep(config.PROCESS_POLL)
 
     save_debug_screenshot(sct, "process_timeout")
     print(f"[โพ] รอเกิน {config.PROCESS_TIMEOUT:.0f} วิ แถบยังไม่หาย - เริ่มรอบใหม่")
@@ -392,7 +402,7 @@ def walk_back_to_pole():
                       prep_c1_delay=config.WALK_PREP_C1_DELAY,
                       prep_s_delay=config.WALK_PREP_S_DELAY,
                       prep_after=config.WALK_PREP_AFTER)
-    time.sleep(config.WALK_SETTLE_DELAY)
+    _sleep(config.WALK_SETTLE_DELAY)
 
 
 def refill_from_trunk(sct, on_status=None):
@@ -432,7 +442,7 @@ def _refill_from_trunk_inner(sct, on_status=None):
 
     print("[เติม] กด ESC ปิดหน้าต่าง")
     inp.press_esc()
-    time.sleep(config.AFTER_CLOSE_DELAY)
+    _sleep(config.AFTER_CLOSE_DELAY)
 
     if not got_ore:
         print("[เติม] ไม่มีแร่ดิบในท้ายรถแล้ว")
